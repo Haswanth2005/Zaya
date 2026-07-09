@@ -83,7 +83,8 @@ export default function App() {
     setProgressSteps(prev => prev.map(step => ({ ...step, status: 'idle' })));
 
     // Create SSE connection
-    const eventSource = new EventSource(`http://localhost:5000/api/analyze?q=${encodeURIComponent(query)}`);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const eventSource = new EventSource(`${API_URL}/api/analyze?q=${encodeURIComponent(query)}`);
 
     eventSource.onmessage = (event) => {
       if (event.data === 'done') {
@@ -156,7 +157,8 @@ export default function App() {
     setChatLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/chat', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +241,7 @@ export default function App() {
               {showMobileSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           )}
-          <div 
+          <div
             className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => { setReport(null); setQuery(''); }}
             title="Return to Home"
@@ -254,7 +256,7 @@ export default function App() {
           <div className="hidden md:flex items-center space-x-2 bg-canvas-soft border border-hairline px-3 py-1.5 rounded-full">
             <span className="text-mute text-xs">Researching</span>
             <span className="text-sm font-medium">{report?.companyName}</span>
-            <button 
+            <button
               onClick={() => { setReport(null); setQuery(''); }}
               className="ml-2 bg-canvas hover:bg-hairline border border-hairline rounded-full p-1 transition-colors"
               title="Close report and start new search"
