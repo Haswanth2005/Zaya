@@ -3,19 +3,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #ffffff;
-  --color-canvas-soft: #fafafa;
-  --color-canvas-soft-2: #f5f5f5;
-  --color-primary: #171717;
-  --color-ink: #171717;
-  --color-body: #4d4d4d;
-  --color-mute: #888888;
-  --color-on-primary: #ffffff;
-  --color-hairline: #ebebeb;
-  --color-hairline-strong: #a1a1a1;
-  --color-link: #0070f3;
-  --color-success: #0070f3;
-  --color-error: #ee0000;
+  --color-canvas: var(--canvas);
+  --color-canvas-soft: var(--canvas-soft);
+  --color-canvas-soft-2: var(--canvas-soft-2);
+  --color-primary: var(--primary);
+  --color-ink: var(--ink);
+  --color-body: var(--body);
+  --color-mute: var(--mute);
+  --color-on-primary: var(--on-primary);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-link: #3291ff;
+  --color-success: #3291ff;
+  --color-error: #ff1a1a;
   --color-warning: #f5a623;
   --color-violet: #7928ca;
   --color-cyan: #50e3c2;
@@ -23,6 +23,32 @@
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+:root {
+  --canvas: #ffffff;
+  --canvas-soft: #fafafa;
+  --canvas-soft-2: #f5f5f5;
+  --primary: #171717;
+  --ink: #171717;
+  --body: #4d4d4d;
+  --mute: #888888;
+  --on-primary: #ffffff;
+  --hairline: #ebebeb;
+  --hairline-strong: #a1a1a1;
+}
+
+.dark {
+  --canvas: #0a0a0a;
+  --canvas-soft: #121212;
+  --canvas-soft-2: #1a1a1a;
+  --primary: #ededed;
+  --ink: #ededed;
+  --body: #a3a3a3;
+  --mute: #737373;
+  --on-primary: #0a0a0a;
+  --hairline: #262626;
+  --hairline-strong: #404040;
 }
 
 @utility shadow-level-1 {
@@ -80,16 +106,9 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background-color: var(--color-hairline-strong);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-mute);
+
+* {
+  scrollbar-width: none;
 }

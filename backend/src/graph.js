@@ -34,12 +34,17 @@ const workflow = new StateGraph(GraphState)
   
   // Set execution flow
   .addEdge("__start__", "validationNode")
+  
+  // Fan-out: run these 5 agents in parallel
   .addEdge("validationNode", "financialsNode")
-  .addEdge("financialsNode", "newsNode")
-  .addEdge("newsNode", "secNode")
-  .addEdge("secNode", "competitionNode")
-  .addEdge("competitionNode", "riskNode")
-  .addEdge("riskNode", "decisionNode")
+  .addEdge("validationNode", "newsNode")
+  .addEdge("validationNode", "secNode")
+  .addEdge("validationNode", "competitionNode")
+  .addEdge("validationNode", "riskNode")
+  
+  // Fan-in: wait for all 5 to complete before decision
+  .addEdge(["financialsNode", "newsNode", "secNode", "competitionNode", "riskNode"], "decisionNode")
+  
   .addEdge("decisionNode", "__end__");
 
 export const graph = workflow.compile();

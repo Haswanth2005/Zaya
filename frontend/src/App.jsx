@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, TrendingUp, TrendingDown, ShieldAlert, DollarSign, 
-  Globe, Percent, Briefcase, Activity, CheckCircle, MessageSquare, 
-  Send, RefreshCw, AlertTriangle, Cpu, Layers, Award, BarChart3, 
+import {
+  Search, TrendingUp, TrendingDown, ShieldAlert, DollarSign, Menu, X,
+  Globe, Percent, Briefcase, Activity, CheckCircle, MessageSquare,
+  Send, RefreshCw, AlertTriangle, Cpu, Layers, Award, BarChart3,
   Info, Sparkles, User, HelpCircle, ArrowRight, CornerDownRight
+  , Moon, Sun
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, Legend, RadarChart, PolarGrid, 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend, RadarChart, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import ReactMarkdown from 'react-markdown';
@@ -26,18 +27,34 @@ export default function App() {
     { id: 'risk', label: 'Risk Factor Evaluation', status: 'idle', desc: 'Isolating bearish factors and vulnerabilities...' },
     { id: 'decision', label: 'Final Verdict', status: 'idle', desc: 'Synthesizing recommendations and confidence...' }
   ]);
-  
+
   const [report, setReport] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   // Chat state
   const [chatMessages, setChatMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  
+
   // Evidence details modal
   const [evidenceModal, setEvidenceModal] = useState(null);
-  
+
   const chatEndRef = useRef(null);
 
   // Auto-scroll chat to bottom
@@ -61,26 +78,26 @@ export default function App() {
     setLoading(true);
     setReport(null);
     setChatMessages([]);
-    
+
     // Reset steps
     setProgressSteps(prev => prev.map(step => ({ ...step, status: 'idle' })));
-    
+
     // Create SSE connection
     const eventSource = new EventSource(`http://localhost:5000/api/analyze?q=${encodeURIComponent(query)}`);
-    
+
     eventSource.onmessage = (event) => {
       if (event.data === 'done') {
         eventSource.close();
         return;
       }
-      
+
       try {
         const payload = JSON.parse(event.data);
-        
+
         if (payload.type === 'status') {
           setCurrentStep(payload.message);
           const currentId = payload.step;
-          
+
           setProgressSteps(prev => prev.map(step => {
             if (step.id === currentId) {
               return { ...step, status: 'active' };
@@ -95,23 +112,23 @@ export default function App() {
             return step;
           }));
         }
-        
+
         if (payload.type === 'result') {
           // Set final steps to success
           setProgressSteps(prev => prev.map(step => ({ ...step, status: 'success' })));
           setReport(payload.data);
-          
+
           // Initialize chat with first analyst greeting
           setChatMessages([
-            { 
-              role: 'assistant', 
-              content: `Hi there! I have finished analyzing **${payload.data.companyName} (${payload.data.ticker})**. Based on our multi-agent research, we've issued a **${payload.data.decision.recommendation}** recommendation with **${payload.data.decision.confidence}%** confidence.\n\nAsk me anything about the financial health, key risks, competitors, or latest news, and I'll walk you through the evidence!` 
+            {
+              role: 'assistant',
+              content: `Hi there! I have finished analyzing **${payload.data.companyName} (${payload.data.ticker})**. Based on our multi-agent research, we've issued a **${payload.data.decision.recommendation}** recommendation with **${payload.data.decision.confidence}%** confidence.\n\nAsk me anything about the financial health, key risks, competitors, or latest news, and I'll walk you through the evidence!`
             }
           ]);
           setLoading(false);
           eventSource.close();
         }
-        
+
         if (payload.type === 'error') {
           alert(`Analysis Error: ${payload.message}`);
           setLoading(false);
@@ -121,7 +138,7 @@ export default function App() {
         console.error("Error parsing SSE message:", err);
       }
     };
-    
+
     eventSource.onerror = (err) => {
       console.error("SSE Connection Error:", err);
       setLoading(false);
@@ -149,7 +166,7 @@ export default function App() {
           messages: [...chatMessages, userMsg]
         })
       });
-      
+
       const data = await response.json();
       if (response.ok) {
         setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
@@ -199,7 +216,7 @@ export default function App() {
     const roe = metricsVal?.roe ? Math.min(100, Math.max(0, metricsVal.roe * 100)) : 40;
     const margin = metricsVal?.profitMargin ? Math.min(100, Math.max(0, metricsVal.profitMargin * 100)) : 30;
     const scoreVal = (report?.financials?.score || 5) * 10;
-    
+
     return [
       { subject: 'Financial Health', A: scoreVal, B: 65, fullMark: 100 },
       { subject: 'Return on Equity', A: roe, B: 55, fullMark: 100 },
@@ -210,84 +227,157 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen bg-canvas-soft text-ink flex flex-col font-sans overflow-hidden">
+    <div className="h-[100dvh] bg-canvas-soft text-ink flex flex-col font-sans overflow-hidden">
       {/* Top Header */}
       <header className="border-b border-hairline bg-canvas sticky top-0 z-40 px-6 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <svg viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="currentColor"/></svg>
+          {report && (
+            <button
+              onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+              className="lg:hidden p-1.5 -ml-2 text-ink hover:bg-canvas-soft rounded-md transition-colors"
+            >
+              {showMobileSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
+          <div 
+            className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => { setReport(null); setQuery(''); }}
+            title="Return to Home"
+          >
+            <img src={darkMode ? "/dark_mode.png" : "/light_mode.png"} alt="Zaya Logo" className="h-8 w-auto" />
           </div>
-          <div>
-            <h1 className="text-sm font-semibold tracking-tight text-ink">Zaya</h1>
-          </div>
-          <div className="text-mute px-2">/</div>
-          <div className="text-sm text-body">Investment Research Platform</div>
+          <div className="hidden md:block text-mute px-2">/</div>
+          <div className="hidden md:block text-sm text-body">Investment Research Platform</div>
         </div>
-        
+
         {report && (
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2 bg-canvas-soft border border-hairline px-3 py-1.5 rounded-full">
             <span className="text-mute text-xs">Researching</span>
-            <span className="text-sm font-medium">{report?.companyName} ({report?.ticker})</span>
+            <span className="text-sm font-medium">{report?.companyName}</span>
+            <button 
+              onClick={() => { setReport(null); setQuery(''); }}
+              className="ml-2 bg-canvas hover:bg-hairline border border-hairline rounded-full p-1 transition-colors"
+              title="Close report and start new search"
+            >
+              <X className="w-3 h-3 text-mute hover:text-ink" />
+            </button>
           </div>
         )}
 
         <div className="flex items-center space-x-4">
-          <button className="bg-canvas border border-hairline text-ink text-sm font-medium rounded-md px-3 py-1.5 shadow-level-1 hover:bg-canvas-soft transition-colors">
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-1.5 text-mute hover:text-ink hover:bg-canvas-soft rounded-md transition-colors"
+          >
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button className="hidden md:block bg-canvas border border-hairline text-ink text-sm font-medium rounded-md px-3 py-1.5 shadow-level-1 hover:bg-canvas-soft transition-colors">
             Feedback
           </button>
-          <button className="bg-primary text-on-primary text-sm font-medium rounded-md px-4 py-1.5 shadow-level-2 hover:opacity-90 transition-opacity">
-            Ask AI
+          <button
+            onClick={() => {
+              if (report) setShowMobileChat(!showMobileChat);
+            }}
+            className="bg-primary text-on-primary text-sm font-medium rounded-md px-4 py-1.5 shadow-level-2 hover:opacity-90 transition-opacity flex items-center space-x-2"
+          >
+            <span className={report ? "hidden md:block" : ""}>Ask AI</span>
+            {report && <MessageSquare className="w-4 h-4 md:hidden" />}
           </button>
         </div>
       </header>
 
       {/* Landing View */}
       {!report && !loading && (
-        <div className="flex-1 flex flex-col items-center pt-32 pb-24 px-6 text-center hero-mesh relative overflow-y-auto">
-          
-          <div className="inline-flex items-center space-x-2 bg-canvas-soft border border-hairline rounded-full px-3 py-1 mb-8 shadow-level-1">
-            <span className="flex h-2 w-2 rounded-full bg-link"></span>
-            <span className="text-xs font-medium text-body">Zaya v1.0 is live</span>
-          </div>
-          
-          <h2 className="text-5xl md:text-6xl font-semibold tracking-tighter text-ink max-w-3xl mb-6">
-            Intelligent investment research.
-          </h2>
-          <p className="text-body text-lg md:text-xl max-w-2xl mb-12">
-            Zaya orchestrates a multi-agent system to synthesize actionable investment intelligence from financials, news, SEC filings, and competitor data.
-          </p>
+        <div className="flex-1 w-full overflow-y-auto">
+          {/* Hero Section */}
+          <div className="flex flex-col items-center pt-32 pb-24 px-6 text-center hero-mesh relative border-b border-hairline">
 
-          <form onSubmit={handleSearch} className="w-full max-w-xl relative mb-12">
-            <input 
-              type="text" 
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter company name or ticker (e.g., Apple, TSLA)..."
-              className="w-full bg-canvas text-ink placeholder-mute border border-hairline rounded-lg px-4 py-3.5 pr-14 focus:outline-none focus:ring-2 focus:ring-primary shadow-level-2 text-base transition-shadow"
-            />
-            <button 
-              type="submit"
-              className="absolute right-2 top-2 bottom-2 bg-primary text-on-primary font-medium px-3 rounded-md hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer shadow-level-1"
-            >
-              Analyze
-            </button>
-          </form>
+            <div className="inline-flex items-center space-x-2 bg-canvas-soft border border-hairline rounded-full px-3 py-1 mb-8 shadow-level-1">
+              <span className="flex h-2 w-2 rounded-full bg-link"></span>
+              <span className="text-xs font-medium text-body">Zaya AI Agents v1.0 Live</span>
+            </div>
 
-          {/* Quick links */}
-          <div className="flex flex-col items-center space-y-4">
-            <span className="text-xs font-mono text-mute uppercase">Sample analyses</span>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['Apple', 'NVIDIA', 'Tesla', 'Microsoft', 'Alphabet'].map(item => (
-                <button 
-                  key={item}
-                  onClick={() => { setQuery(item); setTimeout(() => handleSearch(), 50); }}
-                  className="bg-canvas border border-hairline hover:border-hairline-strong px-4 py-2 rounded-full text-sm text-body transition-all hover:text-ink shadow-level-1"
-                >
-                  {item}
-                </button>
-              ))}
+            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-ink max-w-4xl mb-6">
+              Institutional grade research. <br className="hidden md:block" /> Powered by AI agents.
+            </h2>
+            <p className="text-body text-lg md:text-xl max-w-2xl mb-12">
+              Zaya orchestrates a swarm of autonomous agents to read SEC filings, crunch financials, analyze competitors, and synthesize actionable investment intelligence in seconds.
+            </p>
+
+            <form onSubmit={handleSearch} className="w-full max-w-2xl relative mb-12">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Enter company name or ticker (e.g., Apple, TSLA)..."
+                className="w-full bg-canvas text-ink placeholder-mute border border-hairline rounded-xl px-5 py-4 pr-32 focus:outline-none focus:ring-2 focus:ring-primary shadow-level-4 text-lg transition-shadow"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-2 bottom-2 bg-primary text-on-primary font-medium px-6 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer shadow-level-2"
+              >
+                Analyze <ArrowRight className="w-4 h-4 ml-2" />
+              </button>
+            </form>
+
+            {/* Quick links */}
+            <div className="flex flex-col items-center space-y-4">
+              <span className="text-xs font-mono text-mute uppercase tracking-widest">Live Examples</span>
+              <div className="flex flex-wrap justify-center gap-3">
+                {['Apple', 'NVIDIA', 'Tesla', 'Microsoft', 'Alphabet'].map(item => (
+                  <button
+                    key={item}
+                    onClick={() => { setQuery(item); setTimeout(() => handleSearch(), 50); }}
+                    className="bg-canvas border border-hairline hover:border-hairline-strong px-5 py-2 rounded-full text-sm text-body transition-all hover:text-ink shadow-level-1 hover:shadow-level-2 flex items-center space-x-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span>{item}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Features Section */}
+          <div className="bg-canvas-soft py-24 px-6 border-b border-hairline">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-16">
+                <h3 className="text-3xl font-bold tracking-tight text-ink mb-4">A complete research team in your browser.</h3>
+                <p className="text-body text-lg max-w-2xl mx-auto">Our multi-agent system divides the labor of traditional Wall Street analysts into specialized AI roles.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-canvas border border-hairline p-8 rounded-2xl shadow-level-1 hover:shadow-level-2 transition-shadow">
+                  <div className="w-12 h-12 bg-canvas-soft border border-hairline rounded-xl flex items-center justify-center mb-6">
+                    <DollarSign className="w-6 h-6 text-ink" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-ink mb-3">Financial Analyst</h4>
+                  <p className="text-sm text-body leading-relaxed">Crunches the numbers on margins, P/E ratios, and debt levels to score the company's quantitative health against industry benchmarks.</p>
+                </div>
+
+                <div className="bg-canvas border border-hairline p-8 rounded-2xl shadow-level-1 hover:shadow-level-2 transition-shadow">
+                  <div className="w-12 h-12 bg-canvas-soft border border-hairline rounded-xl flex items-center justify-center mb-6">
+                    <ShieldAlert className="w-6 h-6 text-ink" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-ink mb-3">Risk & SEC Auditor</h4>
+                  <p className="text-sm text-body leading-relaxed">Scans the latest 10-K and 10-Q filings to isolate red flags, regulatory threats, and bearish operational vulnerabilities.</p>
+                </div>
+
+                <div className="bg-canvas border border-hairline p-8 rounded-2xl shadow-level-1 hover:shadow-level-2 transition-shadow">
+                  <div className="w-12 h-12 bg-canvas-soft border border-hairline rounded-xl flex items-center justify-center mb-6">
+                    <Globe className="w-6 h-6 text-ink" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-ink mb-3">Market Strategist</h4>
+                  <p className="text-sm text-body leading-relaxed">Maps the competitive landscape to define the company's moat, market share threats, and comparative positioning.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <footer className="py-12 px-6 text-center text-mute text-sm bg-canvas">
+            <p>Zaya AI Investment Research &copy; 2026. Data provided for informational purposes.</p>
+          </footer>
         </div>
       )}
 
@@ -308,25 +398,22 @@ export default function App() {
               {progressSteps.map((step, idx) => (
                 <div key={step.id} className="flex items-start space-x-4 relative">
                   {idx < progressSteps.length - 1 && (
-                    <div className={`absolute left-[11px] top-8 w-px h-8 ${
-                      step.status === 'success' ? 'bg-primary' : 'bg-hairline'
-                    }`}></div>
+                    <div className={`absolute left-[11px] top-8 w-px h-8 ${step.status === 'success' ? 'bg-primary' : 'bg-hairline'
+                      }`}></div>
                   )}
                   <div className="flex flex-col items-center z-10">
-                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-medium transition-colors ${
-                      step.status === 'success' ? 'bg-primary text-on-primary border-primary' :
+                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-medium transition-colors ${step.status === 'success' ? 'bg-primary text-on-primary border-primary' :
                       step.status === 'active' ? 'bg-canvas text-ink border-primary' :
-                      'bg-canvas-soft text-mute border-hairline'
-                    }`}>
+                        'bg-canvas-soft text-mute border-hairline'
+                      }`}>
                       {step.status === 'success' ? <CheckCircle className="w-3.5 h-3.5" /> : idx + 1}
                     </div>
                   </div>
                   <div className="flex-1 pb-1">
-                    <h4 className={`text-sm font-medium ${
-                      step.status === 'success' ? 'text-ink' :
+                    <h4 className={`text-sm font-medium ${step.status === 'success' ? 'text-ink' :
                       step.status === 'active' ? 'text-ink' :
-                      'text-mute'
-                    }`}>
+                        'text-mute'
+                      }`}>
                       {step.label}
                     </h4>
                     <p className="text-xs text-mute mt-1">{step.desc}</p>
@@ -338,70 +425,76 @@ export default function App() {
         </div>
       )}
 
-            {/* Main Dashboard & Chat View */}
+      {/* Main Dashboard & Chat View */}
       {report && !loading && (
-        <div className="flex-1 flex overflow-hidden bg-canvas-soft w-full">
-          
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-canvas-soft w-full">
+
+          {/* Overlay */}
+          {(showMobileSidebar || showMobileChat) && (
+            <div
+              className="lg:hidden fixed inset-0 bg-ink/20 z-30 backdrop-blur-sm"
+              onClick={() => { setShowMobileSidebar(false); setShowMobileChat(false); }}
+            />
+          )}
+
           {/* Left Navigation Sidebar */}
-          <div className="hidden lg:flex w-56 xl:w-64 flex-col border-r border-hairline bg-canvas z-20 shrink-0 h-full">
-            <div className="p-4 space-y-1 mt-4">
-              <span className="text-xs font-mono text-mute uppercase tracking-widest px-3 mb-4 block">Report Sections</span>
-              
+          <div className={`${showMobileSidebar ? 'fixed inset-y-0 left-0 w-64 shadow-2xl flex z-50' : 'hidden'} lg:flex flex-col lg:w-56 xl:w-64 border-r border-hairline bg-canvas shrink-0 h-full transition-transform`}>
+            <div className="p-4 space-y-1 mt-4 flex-1 overflow-y-auto">
+              <div className="flex items-center justify-between px-3 mb-4">
+                <span className="text-xs font-mono text-mute uppercase tracking-widest block">Report Sections</span>
+                <button onClick={() => setShowMobileSidebar(false)} className="lg:hidden text-mute hover:text-ink"><X className="w-4 h-4" /></button>
+              </div>
+
               <button
-                onClick={() => setActiveTab('overview')}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'overview' 
-                    ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1' 
-                    : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
-                }`}
+                onClick={() => { setActiveTab('overview'); setShowMobileSidebar(false); }}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'overview'
+                  ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1'
+                  : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
+                  }`}
               >
                 <Activity className="w-4 h-4" />
                 <span>Overview</span>
               </button>
-              
+
               <button
-                onClick={() => setActiveTab('financials')}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'financials' 
-                    ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1' 
-                    : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
-                }`}
+                onClick={() => { setActiveTab('financials'); setShowMobileSidebar(false); }}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'financials'
+                  ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1'
+                  : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
+                  }`}
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Financial Health</span>
               </button>
-              
+
               <button
-                onClick={() => setActiveTab('risks')}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'risks' 
-                    ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1' 
-                    : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
-                }`}
+                onClick={() => { setActiveTab('risks'); setShowMobileSidebar(false); }}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'risks'
+                  ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1'
+                  : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
+                  }`}
               >
                 <ShieldAlert className="w-4 h-4" />
                 <span>Risks & SEC</span>
               </button>
 
               <button
-                onClick={() => setActiveTab('competition')}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'competition' 
-                    ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1' 
-                    : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
-                }`}
+                onClick={() => { setActiveTab('competition'); setShowMobileSidebar(false); }}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'competition'
+                  ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1'
+                  : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
+                  }`}
               >
                 <Globe className="w-4 h-4" />
                 <span>Market & Peers</span>
               </button>
 
               <button
-                onClick={() => setActiveTab('news')}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'news' 
-                    ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1' 
-                    : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
-                }`}
+                onClick={() => { setActiveTab('news'); setShowMobileSidebar(false); }}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'news'
+                  ? 'bg-canvas-soft text-ink border border-hairline shadow-level-1'
+                  : 'text-mute hover:text-ink hover:bg-canvas-soft border border-transparent'
+                  }`}
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>News & Sentiment</span>
@@ -412,29 +505,27 @@ export default function App() {
           {/* Center Main Content */}
           <div className="flex-1 overflow-y-auto p-6 lg:p-10 z-10 scroll-smooth h-full relative">
             <div className="max-w-4xl mx-auto space-y-8 pb-20">
-              
+
               {/* OVERVIEW TAB */}
               {activeTab === 'overview' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
                   {/* Verdict Card */}
-                  <div className={`bg-canvas border rounded-xl p-8 shadow-level-3 flex flex-col justify-between ${
-                    report?.decision?.recommendation === 'BUY' ? 'border-primary' :
+                  <div className={`bg-canvas border rounded-xl p-8 shadow-level-3 flex flex-col justify-between ${report?.decision?.recommendation === 'BUY' ? 'border-primary' :
                     report?.decision?.recommendation === 'SELL' ? 'border-error' :
-                    'border-warning'
-                  }`}>
+                      'border-warning'
+                    }`}>
                     <div>
                       <div className="flex justify-between items-start mb-6">
                         <div>
                           <span className="text-xs font-mono text-mute uppercase tracking-wider block mb-2">Agent Recommendation</span>
-                          <h3 className={`text-5xl font-semibold tracking-tighter ${
-                            report?.decision?.recommendation === 'BUY' ? 'text-primary' :
+                          <h3 className={`text-5xl font-semibold tracking-tighter ${report?.decision?.recommendation === 'BUY' ? 'text-primary' :
                             report?.decision?.recommendation === 'SELL' ? 'text-error' :
-                            'text-warning'
-                          }`}>
+                              'text-warning'
+                            }`}>
                             {report?.decision?.recommendation || 'HOLD'}
                           </h3>
                         </div>
-                        
+
                         <div className="text-right">
                           <span className="text-xs font-mono text-mute uppercase tracking-wider block mb-2">Confidence</span>
                           <div className="text-4xl font-semibold tracking-tight text-ink">
@@ -448,17 +539,16 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 border-t border-hairline pt-6 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-hairline pt-6 text-sm">
                       <div>
                         <span className="text-mute block mb-1">Horizon</span>
                         <span className="text-ink font-medium">{report?.decision?.investmentHorizon || 'N/A'}</span>
                       </div>
                       <div>
                         <span className="text-mute block mb-1">Risk Profile</span>
-                        <span className={`font-medium ${
-                          report?.decision?.riskLevel === 'Low' ? 'text-primary' :
+                        <span className={`font-medium ${report?.decision?.riskLevel === 'Low' ? 'text-primary' :
                           report?.decision?.riskLevel === 'High' ? 'text-error' : 'text-warning'
-                        }`}>{report?.decision?.riskLevel || 'N/A'}</span>
+                          }`}>{report?.decision?.riskLevel || 'N/A'}</span>
                       </div>
                       <div>
                         <span className="text-mute block mb-1">Expected Return</span>
@@ -467,46 +557,50 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Bull vs Bear Cases */}
-                  <div className="bg-canvas border border-hairline rounded-xl p-8 shadow-level-2 flex flex-col">
-                    <h4 className="text-lg font-semibold text-ink mb-6 flex items-center space-x-2 tracking-tight border-b border-hairline pb-4">
-                      <Award className="w-5 h-5 text-mute" />
-                      <span>The Research Case</span>
-                    </h4>
-                    
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      {/* Bull */}
-                      <div>
-                        <span className="text-xs font-mono font-medium text-ink uppercase tracking-wider flex items-center space-x-2 mb-4 bg-canvas-soft px-3 py-1.5 rounded-full w-fit border border-hairline">
-                          <TrendingUp className="w-4 h-4" />
-                          <span>Bull Case</span>
-                        </span>
-                        <ul className="space-y-3 text-sm text-body">
-                          {(report?.decision?.bullCase || []).map((c, i) => (
-                            <li key={i} className="flex items-start space-x-2.5">
-                              <CheckCircle className="w-4 h-4 text-mute mt-0.5 shrink-0" />
-                              <span className="leading-relaxed">{c}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Bull vs Bear Cases */}
+                    <div className="bg-canvas border border-hairline rounded-xl p-8 shadow-level-2 flex flex-col">
+                      <h4 className="text-lg font-semibold text-ink mb-6 flex items-center space-x-2 tracking-tight border-b border-hairline pb-4">
+                        <Award className="w-5 h-5 text-mute" />
+                        <span>The Research Case</span>
+                      </h4>
 
-                      {/* Bear */}
-                      <div>
-                        <span className="text-xs font-mono font-medium text-ink uppercase tracking-wider flex items-center space-x-2 mb-4 bg-canvas-soft px-3 py-1.5 rounded-full w-fit border border-hairline">
-                          <TrendingDown className="w-4 h-4" />
-                          <span>Bear Case</span>
-                        </span>
-                        <ul className="space-y-3 text-sm text-body">
-                          {(report?.decision?.bearCase || []).map((c, i) => (
-                            <li key={i} className="flex items-start space-x-2.5">
-                              <AlertTriangle className="w-4 h-4 text-mute mt-0.5 shrink-0" />
-                              <span className="leading-relaxed">{c}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="flex-1 flex flex-col gap-6">
+                        {/* Bull */}
+                        <div>
+                          <span className="text-xs font-mono font-medium text-ink uppercase tracking-wider flex items-center space-x-2 mb-4 bg-canvas-soft px-3 py-1.5 rounded-full w-fit border border-hairline">
+                            <TrendingUp className="w-4 h-4" />
+                            <span>Bull Case</span>
+                          </span>
+                          <ul className="space-y-3 text-sm text-body">
+                            {(report?.decision?.bullCase || []).map((c, i) => (
+                              <li key={i} className="flex items-start space-x-2.5">
+                                <CheckCircle className="w-4 h-4 text-mute mt-0.5 shrink-0" />
+                                <span className="leading-relaxed">{c}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Bear */}
+                        <div>
+                          <span className="text-xs font-mono font-medium text-ink uppercase tracking-wider flex items-center space-x-2 mb-4 bg-canvas-soft px-3 py-1.5 rounded-full w-fit border border-hairline">
+                            <TrendingDown className="w-4 h-4" />
+                            <span>Bear Case</span>
+                          </span>
+                          <ul className="space-y-3 text-sm text-body">
+                            {(report?.decision?.bearCase || []).map((c, i) => (
+                              <li key={i} className="flex items-start space-x-2.5">
+                                <AlertTriangle className="w-4 h-4 text-mute mt-0.5 shrink-0" />
+                                <span className="leading-relaxed">{c}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
+
+
                   </div>
                 </div>
               )}
@@ -522,14 +616,13 @@ export default function App() {
                         <span className="text-6xl font-semibold tracking-tighter text-ink">{report?.financials?.score || 5}</span>
                         <span className="text-mute text-xl font-medium">/10</span>
                       </div>
-                      
+
                       {/* Health meter bar */}
                       <div className="w-full bg-canvas-soft h-2 rounded-full mt-6 overflow-hidden border border-hairline">
-                        <div 
-                          className={`h-full ${
-                            (report?.financials?.score || 5) >= 7.5 ? 'bg-primary' :
+                        <div
+                          className={`h-full ${(report?.financials?.score || 5) >= 7.5 ? 'bg-primary' :
                             (report?.financials?.score || 5) >= 5.0 ? 'bg-warning' : 'bg-error'
-                          }`}
+                            }`}
                           style={{ width: `${(report?.financials?.score || 5) * 10}%` }}
                         ></div>
                       </div>
@@ -566,8 +659,8 @@ export default function App() {
                         { label: 'Profit Margin', val: formatPercent(report?.financials?.metrics?.profitMargin), key: 'profitMargin' },
                         { label: 'Current Ratio', val: report?.financials?.metrics?.currentRatio || 'N/A', key: 'currentRatio' }
                       ].map(item => (
-                        <div 
-                          key={item.key} 
+                        <div
+                          key={item.key}
                           onClick={() => triggerEvidence(item.label, item.val)}
                           className="bg-canvas-soft border border-hairline p-5 rounded-lg cursor-pointer transition-shadow hover:shadow-level-2 hover:border-hairline-strong group"
                         >
@@ -611,7 +704,7 @@ export default function App() {
                           <span className="text-xs font-mono text-mute uppercase block mb-3">Critical Flags</span>
                           <div className="flex flex-wrap gap-2">
                             {(report?.risks?.redFlags || []).map((flag, idx) => (
-                              <span 
+                              <span
                                 key={idx}
                                 className="bg-canvas-soft border border-hairline text-ink text-sm px-3 py-1.5 rounded-full flex items-center space-x-2 shadow-level-1"
                               >
@@ -630,61 +723,62 @@ export default function App() {
               {/* COMPETITION TAB */}
               {activeTab === 'competition' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
-                  {/* Competitor Radar Analysis Chart */}
-                  <div className="bg-canvas border border-hairline rounded-xl p-8 shadow-level-2 flex flex-col">
-                    <h4 className="text-lg font-semibold text-ink mb-6 flex items-center space-x-2 tracking-tight border-b border-hairline pb-4">
-                      <Globe className="w-5 h-5 text-mute" />
-                      <span>Peer Analysis Matrix</span>
-                    </h4>
-                    
-                    <div className="h-64 flex-1">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={getRadarChartData()}>
-                          <PolarGrid stroke="#ebebeb" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#4d4d4d', fontSize: 11, fontFamily: 'Inter' }} />
-                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                          <Radar name={report?.companyName} dataKey="A" stroke="#171717" strokeWidth={2} fill="#171717" fillOpacity={0.1} />
-                          <Radar name="Industry Median" dataKey="B" stroke="#a1a1a1" strokeWidth={1} fill="#a1a1a1" fillOpacity={0.05} />
-                          <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'Inter', paddingTop: '10px' }} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Competitive Peer Grid */}
-                  <div className="bg-canvas border border-hairline rounded-xl p-8 shadow-level-2 flex flex-col justify-between">
-                    <div>
+                  <div className="space-y-6">
+                    {/* Competitor Radar Analysis Chart */}
+                    <div className="bg-canvas border border-hairline rounded-xl p-8 shadow-level-2 flex flex-col">
                       <h4 className="text-lg font-semibold text-ink mb-6 flex items-center space-x-2 tracking-tight border-b border-hairline pb-4">
-                        <Layers className="w-5 h-5 text-mute" />
-                        <span>Competitive Benchmarks</span>
+                        <Globe className="w-5 h-5 text-mute" />
+                        <span>Peer Analysis Matrix</span>
                       </h4>
 
-                      <div className="border border-hairline rounded-lg overflow-hidden text-sm">
-                        <div className="grid grid-cols-3 bg-canvas-soft border-b border-hairline p-3 text-mute font-mono text-xs uppercase tracking-wider">
-                          <div>Metric</div>
-                          <div>{report?.ticker}</div>
-                          <div>Peers</div>
-                        </div>
-                        <div className="divide-y divide-hairline bg-canvas">
-                          {(report?.competition?.comparison || []).map((comp, idx) => (
-                            <div key={idx} className="grid grid-cols-3 p-3 hover:bg-canvas-soft transition-colors">
-                              <div className="font-medium text-ink">{comp.metric}</div>
-                              <div className="text-ink">{comp.subject}</div>
-                              <div className="text-body truncate">{comp.competitors}</div>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="h-80 w-full min-h-[300px] mt-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="55%" data={getRadarChartData()}>
+                            <PolarGrid stroke="#ebebeb" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#4d4d4d', fontSize: 11, fontFamily: 'Inter' }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                            <Radar name={report?.companyName} dataKey="A" stroke={darkMode ? "#ededed" : "#171717"} strokeWidth={2} fill={darkMode ? "#ededed" : "#171717"} fillOpacity={0.1} />
+                            <Radar name="Industry Median" dataKey="B" stroke={darkMode ? "#404040" : "#a1a1a1"} strokeWidth={1} fill={darkMode ? "#404040" : "#a1a1a1"} fillOpacity={0.05} />
+                            <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'Inter', paddingTop: '10px' }} />
+                          </RadarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
+                    {/* Competitive Peer Grid */}
+                    <div className="bg-canvas border border-hairline rounded-xl p-8 shadow-level-2 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-lg font-semibold text-ink mb-6 flex items-center space-x-2 tracking-tight border-b border-hairline pb-4">
+                          <Layers className="w-5 h-5 text-mute" />
+                          <span>Competitive Benchmarks</span>
+                        </h4>
 
-                    <div className="grid grid-cols-2 gap-4 mt-6">
-                      <div className="bg-canvas-soft border border-hairline p-4 rounded-lg">
-                        <span className="text-xs font-mono font-medium text-ink uppercase tracking-wide block mb-2">Moat</span>
-                        <p className="text-sm text-body">{report?.competition?.marketPositioning?.advantages?.[0] || 'N/A'}</p>
+                        <div className="border border-hairline rounded-lg overflow-hidden text-sm">
+                          <div className="grid grid-cols-3 bg-canvas-soft border-b border-hairline p-3 text-mute font-mono text-xs uppercase tracking-wider">
+                            <div>Metric</div>
+                            <div>{report?.ticker}</div>
+                            <div>Peers</div>
+                          </div>
+                          <div className="divide-y divide-hairline bg-canvas">
+                            {(report?.competition?.comparison || []).map((comp, idx) => (
+                              <div key={idx} className="grid grid-cols-3 p-3 hover:bg-canvas-soft transition-colors">
+                                <div className="font-medium text-ink">{comp.metric}</div>
+                                <div className="text-ink">{comp.subject}</div>
+                                <div className="text-body truncate">{comp.competitors}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-canvas-soft border border-hairline p-4 rounded-lg">
-                        <span className="text-xs font-mono font-medium text-ink uppercase tracking-wide block mb-2">Threat</span>
-                        <p className="text-sm text-body">{report?.competition?.marketPositioning?.disadvantages?.[0] || 'N/A'}</p>
+
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        <div className="bg-canvas-soft border border-hairline p-4 rounded-lg">
+                          <span className="text-xs font-mono font-medium text-ink uppercase tracking-wide block mb-2">Moat</span>
+                          <p className="text-sm text-body">{report?.competition?.marketPositioning?.advantages?.[0] || 'N/A'}</p>
+                        </div>
+                        <div className="bg-canvas-soft border border-hairline p-4 rounded-lg">
+                          <span className="text-xs font-mono font-medium text-ink uppercase tracking-wide block mb-2">Threat</span>
+                          <p className="text-sm text-body">{report?.competition?.marketPositioning?.disadvantages?.[0] || 'N/A'}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -701,15 +795,14 @@ export default function App() {
                         <Activity className="w-5 h-5 text-mute" />
                         <span>News Sentiment</span>
                       </h4>
-                      <span className={`font-mono text-xs font-medium px-3 py-1 rounded-full uppercase border ${
-                        report?.news?.sentiment === 'positive' ? 'bg-canvas text-primary border-primary' :
+                      <span className={`font-mono text-xs font-medium px-3 py-1 rounded-full uppercase border ${report?.news?.sentiment === 'positive' ? 'bg-canvas text-primary border-primary' :
                         report?.news?.sentiment === 'negative' ? 'bg-canvas text-error border-error' :
-                        'bg-canvas-soft text-ink border-hairline'
-                      }`}>
+                          'bg-canvas-soft text-ink border-hairline'
+                        }`}>
                         {report?.news?.sentiment || 'NEUTRAL'}
                       </span>
                     </div>
-                    
+
                     <p className="text-sm text-body leading-relaxed mb-6 bg-canvas-soft p-4 rounded-lg border border-hairline">
                       {report?.news?.summary || 'No news summary available.'}
                     </p>
@@ -736,22 +829,24 @@ export default function App() {
           </div>
 
           {/* Right Panel: Sticky Contextual Chatbot */}
-          <div className="w-full lg:w-80 xl:w-[380px] border-t lg:border-t-0 lg:border-l border-hairline bg-canvas flex flex-col shrink-0 z-20 h-full shadow-level-4">
-            
+          <div className={`${showMobileChat ? 'fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex z-50' : 'hidden'} lg:flex w-full lg:w-96 xl:w-[450px] border-t lg:border-t-0 lg:border-l border-hairline bg-canvas flex-col shrink-0 lg:h-full lg:shadow-level-4 transition-transform`}>
+
             {/* Chat Header */}
-            <div className="p-4 border-b border-hairline flex items-center space-x-2 bg-canvas-soft">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              <span className="font-mono text-xs font-medium text-ink uppercase tracking-widest">Analyst Chat</span>
+            <div className="p-4 border-b border-hairline flex items-center justify-between bg-canvas-soft rounded-t-3xl lg:rounded-none">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                <span className="font-mono text-xs font-medium text-ink uppercase tracking-widest">Analyst Chat</span>
+              </div>
+              <button onClick={() => setShowMobileChat(false)} className="lg:hidden text-mute hover:text-ink p-1"><X className="w-4 h-4" /></button>
             </div>
 
             {/* Messages body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
               {chatMessages.map((msg, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`flex flex-col space-y-1.5 max-w-[90%] ${
-                    msg.role === 'user' ? 'ml-auto items-end' : 'items-start'
-                  }`}
+                  className={`flex flex-col space-y-1.5 max-w-[90%] ${msg.role === 'user' ? 'ml-auto items-end' : 'items-start'
+                    }`}
                 >
                   <div className="flex items-center space-x-2 text-xs font-mono text-mute px-1">
                     {msg.role === 'user' ? (
@@ -760,12 +855,11 @@ export default function App() {
                       <><Cpu className="w-3 h-3 text-primary" /><span>Zaya</span></>
                     )}
                   </div>
-                  
-                  <div className={`p-3.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === 'user' 
-                      ? 'bg-primary text-on-primary rounded-tr-sm shadow-level-1' 
-                      : 'bg-canvas-soft border border-hairline text-ink rounded-tl-sm shadow-level-1'
-                  }`}>
+
+                  <div className={`p-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+                    ? 'bg-primary text-on-primary rounded-tr-sm shadow-level-1'
+                    : 'bg-canvas-soft border border-hairline text-ink rounded-tl-sm shadow-level-1'
+                    }`}>
                     {msg.role === 'assistant' ? (
                       <div className="prose prose-sm prose-p:leading-relaxed max-w-none text-ink">
                         <ReactMarkdown>
@@ -778,7 +872,7 @@ export default function App() {
                   </div>
                 </div>
               ))}
-              
+
               {chatLoading && (
                 <div className="flex items-center space-x-2 text-mute text-sm bg-canvas-soft w-fit p-3 rounded-2xl rounded-tl-sm border border-hairline">
                   <span className="w-2 h-2 bg-primary rounded-full animate-bounce"></span>
@@ -786,22 +880,22 @@ export default function App() {
                   <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
                 </div>
               )}
-              
+
               <div ref={chatEndRef} />
             </div>
 
             {/* Input form */}
             <form onSubmit={handleSendMessage} className="p-4 border-t border-hairline bg-canvas">
               <div className="relative flex items-center">
-                <input 
+                <input
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder="Ask a question..."
                   className="w-full bg-canvas-soft border border-hairline text-ink placeholder-mute rounded-full pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary shadow-level-1 text-sm transition-shadow"
                 />
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={chatLoading || !inputMessage.trim()}
                   className="absolute right-1.5 p-2 bg-primary text-on-primary rounded-full hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-level-1"
                 >
@@ -822,13 +916,13 @@ export default function App() {
               <CheckCircle className="w-5 h-5 text-primary" />
               <span className="font-semibold text-ink tracking-tight">Audit Trail</span>
             </div>
-            
+
             <div className="space-y-5">
               <div>
                 <span className="text-xs font-mono text-mute uppercase tracking-wider block mb-1">Metric</span>
                 <span className="text-ink font-medium text-base">{evidenceModal.metric}</span>
               </div>
-              
+
               <div>
                 <span className="text-xs font-mono text-mute uppercase tracking-wider block mb-1">Value</span>
                 <span className="text-ink font-semibold text-2xl tracking-tight">{evidenceModal.value}</span>
@@ -845,7 +939,7 @@ export default function App() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setEvidenceModal(null)}
               className="mt-8 w-full bg-primary hover:opacity-90 text-on-primary font-medium py-3 rounded-full transition-opacity shadow-level-2"
             >
