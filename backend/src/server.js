@@ -40,7 +40,7 @@ app.get('/api/analyze', async (req, res) => {
   try {
     const inputs = { query: query };
     const stream = await graph.stream(inputs, { streamMode: 'updates' });
-    
+
     let finalState = {};
 
     for await (const update of stream) {
@@ -146,6 +146,12 @@ Your task is to answer follow-up questions from the user (an investor) using the
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Zaya backend server running on port ${PORT}`);
-});
+// Export for Vercel serverless functions
+export default app;
+
+// Also listen when run directly (local dev with `npm start` or `nodemon`)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Zaya backend server running on port ${PORT}`);
+  });
+}
